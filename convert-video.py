@@ -9,11 +9,22 @@ import sys
 import os
 import time
 import datetime
+import platform
 from subprocess import call, check_output, STDOUT
 from collections import OrderedDict
 
-COCOAP = "./CocoaDialog.app/Contents/MacOS/CocoaDialog"
-FFMPEG = "./ffmpeg"
+import chardet
+
+SYSTEM = platform.system()
+
+if SYSTEM == 'Windows':
+    OPEN_CMD = 'start'
+    COCOAP = "./CocoaDialog.app/Contents/MacOS/CocoaDialog"
+    FFMPEG = "./ffmpeg.exe"
+else:
+    OPEN_CMD = 'open'
+    COCOAP = "./CocoaDialog.app/Contents/MacOS/CocoaDialog"
+    FFMPEG = "./ffmpeg"
 # AUDIO_CODEC = []  # defaults to AAC
 AUDIO_CODEC = ["-acodec", "copy"]
 # AUDIO_CODEC = ["-acodec", "libmp3lame"]
@@ -23,8 +34,8 @@ YES = NEXT = 1
 YES_STR = "yes"
 NO_STR = "no"
 LOGOS = OrderedDict([
-    ('ORTM', 'ortm.png'),
-    ('TM2', 'tm2.png'),
+    ('ORTM', 'logo_ortm.png'),
+    ('TM2', 'logo_tm2.png'),
     ('AUCUN', None),
 ])
 
@@ -66,6 +77,7 @@ def duration_from_path(fpath):
                           "-strict", "-2", "/tmp/trash.mp4"],
                          with_output=True)
     for line in ffmpeg_out.split("\n"):
+        print("line", line)
         if "Duration:" in line:
             duration = line.split(',', 1)[0].split(None, 1)[-1]
     return duration
@@ -83,7 +95,11 @@ def syscall(args, shell=False, with_print=False, with_output=False):
         args = ' '.join(args)
 
     if with_output:
-        return check_output(args, stderr=STDOUT)
+        output = check_output(args, stderr=STDOUT)
+        encoding = chardet.detect(output)
+        if encoding is not None and encoding['encoding'] is not None:
+            return output.decode(encoding['encoding'])
+        return output
     else:
         return call(args, shell=shell)
 
@@ -104,6 +120,10 @@ def confirm_bubble(message):
 
 def dialog_call(*arguments, **kwargs):
     ret = syscall(*arguments, with_output=True, **kwargs)
+
+    # remove CocoaDialog warning from output as it breaks parsing
+    ret = "\n".join([l for l in ret.split("\n")
+                     if l and "CocoaDialog" not in l])
 
     if ret is None:
         ret = str(CANCEL)

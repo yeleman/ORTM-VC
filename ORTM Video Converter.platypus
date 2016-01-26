@@ -12,17 +12,20 @@
 	<string>Renaud Gaudin</string>
 	<key>BundledFiles</key>
 	<array>
-		<string>/Users/reg/src/ORTM-VC/tm2.png</string>
-		<string>/Users/reg/src/ORTM-VC/ortm.png</string>
 		<string>/Users/reg/src/ORTM-VC/ffmpeg</string>
 		<string>/Users/reg/src/ORTM-VC/CocoaDialog.app</string>
+		<string>/Users/reg/src/ORTM-VC/chardet</string>
+		<string>/Users/reg/src/ORTM-VC/enum.pyc</string>
+		<string>/Users/reg/src/ORTM-VC/enum.py</string>
+		<string>/Users/reg/src/ORTM-VC/logo_tm2.png</string>
+		<string>/Users/reg/src/ORTM-VC/logo_ortm.png</string>
 	</array>
 	<key>Creator</key>
 	<string>Platypus-4.9</string>
 	<key>DeclareService</key>
 	<false/>
 	<key>Destination</key>
-	<string>/Users/reg/src/ORTM-VC/ORTM Video Converter.app</string>
+	<string>/Users/reg/Desktop/MyPlatypusApp.app</string>
 	<key>DestinationOverride</key>
 	<false/>
 	<key>DevelopmentVersion</key>
