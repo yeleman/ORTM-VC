@@ -376,4 +376,8 @@ if __name__ == '__main__':
         logger.error("Missing video path parameter")
         sys.exit(1)
 
-    convert_file(sys.argv[1].replace('\\', ''))
+    fpath = sys.argv[1]
+    if SYSTEM != 'Windows':
+        fpath = fpath.replace('\\', '')
+
+    convert_file(fpath)

@@ -11,6 +11,7 @@ import subprocess
 from threading import Thread
 import Tkinter as tk
 
+import chardet
 import easygui
 
 logging.basicConfig(level=logging.DEBUG)
@@ -21,6 +22,13 @@ ON_POSIX = 'posix' in sys.builtin_module_names
 
 script_thread = None
 script_process = None
+
+
+def normalized(output):
+    encoding = chardet.detect(output)
+    if encoding is not None and encoding['encoding'] is not None:
+        return output.decode(encoding['encoding'])
+    return output
 
 
 def enqueue_output(out, terminal):
@@ -41,7 +49,7 @@ def log_to_terminal(message, terminal, newline=True, auto_scroll=True):
 def launch_script(fname, terminal):
     global script_process
     script_process = subprocess.Popen(
-        ['./convert-video.py', fname],
+        ['python', './convert-video.py', fname],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         close_fds=ON_POSIX)
