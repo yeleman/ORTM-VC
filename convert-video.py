@@ -12,6 +12,7 @@ import datetime
 import platform
 from subprocess import call, check_output, STDOUT
 from collections import OrderedDict
+import easygui
 
 import chardet
 
@@ -28,15 +29,14 @@ else:
 # AUDIO_CODEC = []  # defaults to AAC
 AUDIO_CODEC = ["-acodec", "copy"]
 # AUDIO_CODEC = ["-acodec", "libmp3lame"]
-CANCEL = 3
-NO = DONE = 2
-YES = NEXT = 1
-YES_STR = "yes"
-NO_STR = "no"
+
+YES = "Oui"
+NO = "Non"
+YESNO = OrderedDict([(True, YES), (False, NO)])
 LOGOS = OrderedDict([
-    ('ORTM', 'logo_ortm.png'),
-    ('TM2', 'logo_tm2.png'),
-    ('AUCUN', None),
+    ('logo_ortm.png', 'ORTM'),
+    ('logo_tm2.png', 'TM2'),
+    (None, 'AUCUN'),
 ])
 
 logging.basicConfig(level=logging.DEBUG)
@@ -105,42 +105,25 @@ def syscall(args, shell=False, with_print=False, with_output=False):
 
 
 def display_error(message, title="Erreur", exit=True):
-    ret, _ = dialog_call([
-        COCOAP, "ok-msgbox", "-‑no‑cancel",
-        "--title", title, "--icon", "x",
-        "--informative-text", message])
-    if ret == NO or exit:
-        sys.exit(int(bool(exit)))
+    easygui.msgbox(title=title, msg=message)
+    if exit:
+        sys.exit(1)
 
 
 def confirm_bubble(message):
-    syscall([COCOAP, "bubble", "--icon", "document", "--title",
-             "Conversion terminée", "--text", message], with_output=True)
+    easygui.msgbox(title="Conversion terminée", msg=message)
 
 
-def dialog_call(*arguments, **kwargs):
-    ret = syscall(*arguments, with_output=True, **kwargs)
-
-    # remove CocoaDialog warning from output as it breaks parsing
-    ret = "\n".join([l for l in ret.split("\n")
-                     if l and "CocoaDialog" not in l])
-
-    if ret is None:
-        ret = str(CANCEL)
-    else:
-        ret = ret.strip()
-
-    if not ret.isdigit():
-        ret_code, ret = ret.split(None, 1)
-        ret_code = int(ret_code)
-    else:
-        ret_code, ret = int(ret), None
-
-    if ret_code == CANCEL:
-        logger.info("User cancelled process. Exiting.")
-        sys.exit()
-
-    return ret_code, ret
+def yesnodialog(title, msg, choices, default=None):
+    index = easygui.indexbox(
+        title=title,
+        msg=msg,
+        choices=choices.values(),
+        default_choice=default,
+        cancel_choice=None)
+    if index is None:
+        sys.exit(0)
+    return choices.keys()[index]
 
 
 def ffmpeg_encode(input, output, logo=False,
@@ -239,48 +222,35 @@ def convert_file(fpath):
     duration_seconds = seconds_from_ffmepg(duration)
 
     # ask about logo
-    rc, logo_str = dialog_call([
-        COCOAP, "standard-dropdown",
-        "‑‑no‑cancel",
-        "--title", title,
-        "--text", "Quel logo ajouter sur la/les vidéos ?",
-        "--items"] + LOGOS.keys())
-    # cancel on button 2
-    if rc == NO:
-        sys.exit()
-    logo = LOGOS.get(LOGOS.keys()[int(logo_str)])
+    logo = yesnodialog(
+        title=title,
+        msg="Quel logo ajouter sur la/les vidéos ?",
+        choices=LOGOS)
 
     # ask about full encoding
-    rc, _ = dialog_call([
-        COCOAP, "yesno-msgbox",
-        "--title", title,
-        "--text", "Convertir la vidéo complète ?",
-        "--informative-text",
-        "La vidéo doit-elle être convertie en entier ?"])
-    encode_full = rc == YES
+    encode_full = yesnodialog(
+        title=title,
+        msg="Convertir la vidéo complète ?",
+        choices=YESNO,
+        default=YES)
 
     # ask about clips
-    rc, _ = dialog_call([
-        COCOAP, "yesno-msgbox",
-        "--title", title,
-        "--text", "Découper la vidéo ?",
-        "--informative-text", "La vidéo doit-elle être découpée en clips ?"])
-    has_clips = rc == YES
+    has_clips = yesnodialog(
+        title="Découper la vidéo ?",
+        msg="La vidéo doit-elle être découpée en clips ?",
+        choices=YESNO,
+        default=YES)
 
     if has_clips:
         done_prepping_clips = False
         clip_counter = 1
         while not done_prepping_clips:
-            rc, clip_data = dialog_call([
-                COCOAP, "inputbox",
-                "--title", "{t} - Clip nº{n}".format(t=title, n=clip_counter),
-                "--text", "00:10:00 00:15:00 Sujet",
-                "--informative-text", "Début, fin et nom au format:\nHH:MM:SS "
-                "HH:MM:SS NOM DU CLIP\nDurée vidéo complète: {}"
-                .format(duration),
-                "--button1", "Clip Suivant",
-                "--button2", "Terminé",
-                "--button3", "Annuler"])
+            clip_data = easygui.enterbox(
+                title="Clip nº{n}".format(t=title, n=clip_counter),
+                default="00:10:00 00:15:00 Sujet",
+                msg="Début, fin et nom au format:\nHH:MM:SS "
+                    "HH:MM:SS NOM DU CLIP\nDurée vidéo complète: {}"
+                    .format(duration))
 
             # user entered empty string (cancel a 'next' event)
             if not clip_data:
@@ -306,22 +276,18 @@ def convert_file(fpath):
                     continue
                 clips.append((nbs_start, nbs_end, name))
 
-            if rc == DONE:
-                done_prepping_clips = True
-            else:
-                clip_counter += 1
+            clip_counter += 1
 
     # audio-only versions
-    rc, _ = dialog_call([
-        COCOAP, "yesno-msgbox",
-        "--title", title,
-        "--text", "Encoder les pistes audio ?",
-        "--informative-text", "Les vidéos doivent-elles être exportées en"
-                              "version audio aussi ?"])
-    encode_audio = rc == YES
+    encode_audio = yesnodialog(
+        title="Encoder les pistes audio ?",
+        msg="Les vidéos doivent-elles être exportées "
+              "en version audio aussi ?",
+        choices=YESNO,
+        default=NO)
 
     # summary
-    yn = lambda x: YES_STR if x else NO_STR
+    yn = lambda x: YES if x else NO
     summary = ("Encoding summary:\n"
                "Adding logo: {l}{l2}\n"
                "Encoding full video: {f} ({d})\n"
@@ -330,7 +296,7 @@ def convert_file(fpath):
                        l2=" ({})".format(logo) if logo else "",
                        f=yn(encode_full),
                        d=duration,
-                       c=len(clips) if len(clips) else NO_STR))
+                       c=len(clips) if len(clips) else NO))
     for ss, es, name in clips:
         summary += "\t{n}: {s} -> {e} ({t}s)\n".format(
             n=name,
@@ -341,23 +307,12 @@ def convert_file(fpath):
     logger.info(summary)
 
     # Everything's ready. let's confirm
-    # message = ""
-    # if len(clips):
-    #     message += "Conversion de {} clips.\n".format(len(clips))
-    #     for ss, es, name in clips:
-    #         message += "\t{n}: {s}s.\n".format(n=name, s=int(es - ss))
-    # if encode_full:
-    #     message += "Conversion de la vidéo originale.\n"
-    # if logo:
-    #     message += "Avec le logo {}".format(logo)
-    # else:
-    #     message += "Sans logo."
-    rc, confirm = dialog_call([
-        COCOAP, "ok-msgbox",
-        "--title", title, "--icon", "gear",
-        "--text", "Voulez-vous continer ?",
-        "--informative-text", summary])
-    if rc != YES:
+    confirm = yesnodialog(
+        title=title,
+        msg=summary,
+        choices=YESNO,
+        default=YES)
+    if not confirm:
         sys.exit()
 
     # create an output folder for our mp4s
