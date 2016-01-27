@@ -7,31 +7,23 @@ from __future__ import (unicode_literals, absolute_import,
 import logging
 import sys
 import os
-import fcntl
 import subprocess
 from threading import Thread
 import Tkinter as tk
 
 import easygui
 
-
+ON_POSIX = 'posix' in sys.builtin_module_names
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('ORTM-VC')
+script_thread = None
+script_process = None
 
 
-def exit(code=0):
-    sys.exit(code)
-
-
-def non_block_read(output):
-    ''' even in a thread, a normal read with block until the buffer is full '''
-    fd = output.fileno()
-    fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-    fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-    try:
-        return output.read()
-    except:
-        return ''
+def enqueue_output(out, terminal):
+    for line in iter(out.readline, b''):
+        log_to_terminal(line, terminal=terminal, newline=False)
+    out.close()
 
 
 def log_to_terminal(message, terminal, newline=True, auto_scroll=True):
@@ -43,24 +35,21 @@ def log_to_terminal(message, terminal, newline=True, auto_scroll=True):
         terminal.see(tk.END)
 
 
-def log_worker(stdout, terminal):
-    while True:
-        output = non_block_read(stdout).strip()
-        if output:
-            log_to_terminal(output, terminal=terminal, newline=False)
-
-
 def launch_script(fname, terminal):
-    p = subprocess.Popen(['./convert-video.py', fname],
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT)
+    global script_process
+    script_process = subprocess.Popen(
+        ['./convert-video.py', fname],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        close_fds=ON_POSIX)
 
-    thread = Thread(target=log_worker, args=[p.stdout, terminal])
-    thread.daemon = True
-    thread.start()
+    log_thread = Thread(target=enqueue_output,
+                        args=[script_process.stdout, terminal])
+    log_thread.daemon = True
+    log_thread.start()
 
-    p.wait()
-    thread.join(timeout=1)
+    script_process.wait()
+    log_thread.join(timeout=1)
 
 
 def main(*args):
@@ -91,23 +80,16 @@ def main(*args):
                 .format(fname))
             return
 
-        thread = Thread(target=launch_script, args=(fname, terminal))
-        thread.start()
+        script_thread = Thread(target=launch_script, args=(fname, terminal))
+        script_thread.start()
 
     select_btn = tk.Button(root, text="Choisir fichier source",
 
                            command=on_click_button)
 
-    def on_click_exit():
-        return exit(0)
-
-    exit_btn = tk.Button(root, text="Quitter",
-                         command=on_click_exit)
-
     # add widgets to root
     select_btn.pack()
     terminal.pack()
-    exit_btn.pack()
 
     tk.mainloop()
 

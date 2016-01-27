@@ -12,20 +12,20 @@ import datetime
 import platform
 from subprocess import call, check_output, STDOUT
 from collections import OrderedDict
-import easygui
 
+import easygui
 import chardet
 
 SYSTEM = platform.system()
 
 if SYSTEM == 'Windows':
     OPEN_CMD = 'start'
-    COCOAP = "./CocoaDialog.app/Contents/MacOS/CocoaDialog"
     FFMPEG = "./ffmpeg.exe"
 else:
     OPEN_CMD = 'open'
-    COCOAP = "./CocoaDialog.app/Contents/MacOS/CocoaDialog"
     FFMPEG = "./ffmpeg"
+COCOAP = "./CocoaDialog.app/Contents/MacOS/CocoaDialog"
+TOASTERP = "./toast.exe"
 # AUDIO_CODEC = []  # defaults to AAC
 AUDIO_CODEC = ["-acodec", "copy"]
 # AUDIO_CODEC = ["-acodec", "libmp3lame"]
@@ -77,7 +77,6 @@ def duration_from_path(fpath):
                           "-strict", "-2", "/tmp/trash.mp4"],
                          with_output=True)
     for line in ffmpeg_out.split("\n"):
-        print("line", line)
         if "Duration:" in line:
             duration = line.split(',', 1)[0].split(None, 1)[-1]
     return duration
@@ -89,7 +88,7 @@ def syscall(args, shell=False, with_print=False, with_output=False):
         args = args.split()
 
     if with_print:
-        print(u"-----------\n" + u" ".join(args) + u"\n-----------")
+        logger.debug(u"-----------\n" + u" ".join(args) + u"\n-----------")
 
     if shell:
         args = ' '.join(args)
@@ -111,7 +110,12 @@ def display_error(message, title="Erreur", exit=True):
 
 
 def confirm_bubble(message):
-    easygui.msgbox(title="Conversion terminée", msg=message)
+    title = "Conversion terminée"
+    if SYSTEM == 'Windows':
+        syscall([TOASTERP, "-t", title, "-m", message])
+    else:
+        syscall([COCOAP, "bubble", "--icon", "document", "--title",
+                 "Conversion terminée", "--text", message], with_output=True)
 
 
 def yesnodialog(title, msg, choices, default=None):
@@ -160,7 +164,7 @@ def ffmpeg_encode(input, output, logo=False,
     # ouput mp4 file
     args += ["-strict", "-2", output]
 
-    syscall(args, with_print=False)
+    syscall(args, with_print=True)
 
 
 def ffmpeg_audio_encode(input, output, start_after=None, stop_after=None):
@@ -328,7 +332,7 @@ def convert_file(fpath):
         fname_full = "COMPLET-{}.mp4".format(title)
         fpath_full = os.path.join(dest_folder, fname_full)
         ffmpeg_encode(input=fpath, logo=logo, output=fpath_full)
-        confirm_bubble('"La vidéo {} a été convertie et est prête pour envoi"'
+        confirm_bubble("La vidéo {} a été convertie et est prête pour envoi"
                        .format(title))
 
         if encode_audio:
@@ -349,7 +353,7 @@ def convert_file(fpath):
         fpath_clip = os.path.join(dest_folder, fname_clip)
         ffmpeg_encode(input=fpath, logo=logo, output=fpath_clip,
                       start_after=start_sec, stop_after=end_sec)
-        confirm_bubble('"Le clip#{}: {} a été converti et est prêt pour envoi"'
+        confirm_bubble("Le clip#{}: {} a été converti et est prêt pour envoi"
                        .format(clip_id, name))
         logger.info("Conversion of clip #{} ({}) has completed."
                     .format(clip_id, name))
