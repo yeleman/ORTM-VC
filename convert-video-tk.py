@@ -38,7 +38,7 @@ def enqueue_output(out, terminal):
 
 
 def log_to_terminal(message, terminal, newline=True, auto_scroll=True):
-    message = message.decode('utf-8')
+    message = normalized(message)
     if (newline or auto_scroll) and not message.endswith('\n'):
             message += '\n'
     terminal.insert(tk.END, message)
