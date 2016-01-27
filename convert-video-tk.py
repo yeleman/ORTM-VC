@@ -13,9 +13,12 @@ import Tkinter as tk
 
 import easygui
 
-ON_POSIX = 'posix' in sys.builtin_module_names
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('ORTM-VC')
+
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+ON_POSIX = 'posix' in sys.builtin_module_names
+
 script_thread = None
 script_process = None
 
@@ -57,6 +60,8 @@ def main(*args):
     root = tk.Tk()
     root.focus_force()
     root.wm_title("ORTM Video Converter")
+    if not ON_POSIX:
+        root.iconbitmap(os.path.join(ROOT_DIR, 'flash-video-encoder.ico'))
 
     # text output for terminal and messages
     terminal = tk.Text(root,
