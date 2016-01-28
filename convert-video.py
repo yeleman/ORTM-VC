@@ -23,7 +23,7 @@ if SYSTEM == "Windows":
 
 FFMPEG = "ffmpeg.exe" if SYSTEM == 'Windows' else "./ffmpeg"
 COCOAP = "./CocoaDialog.app/Contents/MacOS/CocoaDialog"
-TOASTERP = "toast\\toast.exe"
+TOASTERP = "toast.exe"
 # AUDIO_CODEC = []  # defaults to AAC
 AUDIO_CODEC = ["-acodec", "copy"]
 # AUDIO_CODEC = ["-acodec", "libmp3lame"]
