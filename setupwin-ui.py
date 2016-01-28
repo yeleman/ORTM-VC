@@ -21,10 +21,10 @@ else:
     ZIPFILE = 'shared-ui.lib'
     BUNDLES = 3
 
-setup(console=[{'script': 'convert-video-tk.py',
+setup(windows=[{'script': 'convert-video-tk.py',
                 'icon_resources': [
                     (0, os.path.join(ROOT_DIR, 'flash-video-encoder.ico'))]}],
-      options={'py2exe': {'includes': [''],
+      options={'py2exe': {'includes': [],
                           'compressed': True,
                           'bundle_files': BUNDLES,
                           'dll_excludes': ['MSVCP90.dll']

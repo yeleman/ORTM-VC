@@ -20,7 +20,7 @@ else:
     BUNDLES = 3
 
 setup(console=[{'script': 'convert-video.py'}],
-      options={'py2exe': {'includes': [''],
+      options={'py2exe': {'includes': [],
                           'compressed': True,
                           'bundle_files': BUNDLES,
                           'dll_excludes': ['MSVCP90.dll']
