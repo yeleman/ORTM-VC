@@ -6,7 +6,7 @@
 
   !define MUI_PRODUCT "ORTM-VC"
   !define MUI_FILE "ortm-vc"
-  !define MUI_VERSION "Ver. 1.0"
+  !define MUI_VERSION "1.0"
   !define MUI_BRANDINGTEXT "${MUI_PRODUCT} ${MUI_VERSION}"
   ;CRCCheck On
 
@@ -16,7 +16,7 @@
 ;---------------------------------
 ;General
 
-  OutFile "Install-${MUI_PRODUCT}-${MUI_VERSION}.exe"
+  OutFile "Install-${MUI_PRODUCT} ${MUI_VERSION}.exe"
   ShowInstDetails "nevershow"
   ShowUninstDetails "nevershow"
   ;SetCompressor off
@@ -50,15 +50,13 @@ Section "install"
 
   ; List of files/folders to copy
   File /r dist\*.*
-  File /r *.dll
-  File /r *.manifest
-  File /r ffmpeg.exe
-  File /r flash-video-encoder.ico
-  File /r logo_ortm.png
-  File /r logo_tm2.png
-  File /r toast\
-  File /r ${IMAGES}
-  File /r ${CIMAGES_PATH}
+  File *.dll
+  File *.manifest
+  File ffmpeg.exe
+  File flash-video-encoder.ico
+  File logo_ortm.png
+  File logo_tm2.png
+  File /r toast
 
 ;create desktop shortcut
   CreateShortCut "$DESKTOP\${MUI_PRODUCT}.lnk" "$INSTDIR\${MUI_FILE}.exe" parameters "$INSTDIR\${MUI_ICON}"

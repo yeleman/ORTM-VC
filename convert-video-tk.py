@@ -15,8 +15,12 @@ import chardet
 import easygui
 
 ON_POSIX = 'posix' in sys.builtin_module_names
+is_frozen = lambda: hasattr(sys, 'frozen')
 
-logging.basicConfig(level=logging.DEBUG)
+log_props = {'level': logging.DEBUG}
+if is_frozen():
+    log_props.update({'filename': 'ORTM-VC.log'})
+logging.basicConfig(**log_props)
 logger = logging.getLogger('ORTM-VC')
 
 # silence py2exe log
@@ -25,7 +29,6 @@ if not ON_POSIX:
 
 script_thread = None
 script_process = None
-is_frozen = lambda: hasattr(sys, 'frozen')
 
 
 def normalized(output):
