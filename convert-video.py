@@ -19,13 +19,11 @@ import chardet
 SYSTEM = platform.system()
 
 if SYSTEM == 'Windows':
-    OPEN_CMD = 'start'
-    FFMPEG = "./ffmpeg.exe"
+    FFMPEG = "ffmpeg.exe"
 else:
-    OPEN_CMD = 'open'
     FFMPEG = "./ffmpeg"
 COCOAP = "./CocoaDialog.app/Contents/MacOS/CocoaDialog"
-TOASTERP = "./toast.exe"
+TOASTERP = "toast\\toast.exe"
 # AUDIO_CODEC = []  # defaults to AAC
 AUDIO_CODEC = ["-acodec", "copy"]
 # AUDIO_CODEC = ["-acodec", "libmp3lame"]
@@ -41,6 +39,10 @@ LOGOS = OrderedDict([
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('ORTM-VC')
+
+
+safe_path = lambda x: '"{}"'.format(x)
+safe_str = lambda x: safe_path(x) if SYSTEM == "Windows" else x
 
 
 def seconds_from_ffmepg(timestr):
@@ -74,7 +76,7 @@ def duration_from_path(fpath):
     duration = None
     ffmpeg_out = syscall([FFMPEG, "-y", "-ss", "00:00:00.0",
                           "-i", fpath, "-to", "00:00:00.1",
-                          "-strict", "-2", "/tmp/trash.mp4"],
+                          "-strict", "-2", "trash.mp4"],
                          with_output=True)
     for line in ffmpeg_out.split("\n"):
         if "Duration:" in line:
@@ -110,12 +112,13 @@ def display_error(message, title="Erreur", exit=True):
 
 
 def confirm_bubble(message):
-    title = "Conversion terminée"
+    title = "Conversion terminee"
     if SYSTEM == 'Windows':
-        syscall([TOASTERP, "-t", title, "-m", message])
+        syscall([TOASTERP, "-t", title,
+                 "-m", message.encode('ascii', 'ignore')])
     else:
         syscall([COCOAP, "bubble", "--icon", "document", "--title",
-                 "Conversion terminée", "--text", message], with_output=True)
+                 title, "--text", message], with_output=True)
 
 
 def yesnodialog(title, msg, choices, default=None):
@@ -149,22 +152,22 @@ def ffmpeg_encode(input, output, logo=False,
         args += ["-ss", nb_seconds_as_ffmepg(start_after)]
 
     # input movie file
-    args += ["-i", input]
+    args += ["-i", safe_path(input)]
 
     # logo overlay
     if logo:
-        args += ["-vf",
-                 "movie={} [watermark];[in][watermark] "
-                 "overlay=main_w-overlay_w-20:20 [out]".format(logo)]
+        args += ['-vf',
+                 safe_str("movie={} [watermark];[in][watermark] "
+                          "overlay=main_w-overlay_w-20:20 [out]").format(logo)]
 
     # stop at defined position
     if stop_after:
         args += ["-to", nb_seconds_as_ffmepg(stop_after - (start_after or 0))]
 
     # ouput mp4 file
-    args += ["-strict", "-2", output]
+    args += ["-strict", "-2", safe_path(output)]
 
-    syscall(args, with_print=True)
+    syscall(args, with_print=True, shell=True)
 
 
 def ffmpeg_audio_encode(input, output, start_after=None, stop_after=None):
@@ -251,7 +254,7 @@ def convert_file(fpath):
         while not done_prepping_clips:
             clip_data = easygui.enterbox(
                 title="Clip nº{n}".format(t=title, n=clip_counter),
-                default="00:10:00 00:15:00 Sujet",
+                default="00:00:00 00:02:00 Sujet",
                 msg="Début, fin et nom au format:\nHH:MM:SS "
                     "HH:MM:SS NOM DU CLIP\nDurée vidéo complète: {}"
                     .format(duration))
@@ -332,7 +335,7 @@ def convert_file(fpath):
         fname_full = "COMPLET-{}.mp4".format(title)
         fpath_full = os.path.join(dest_folder, fname_full)
         ffmpeg_encode(input=fpath, logo=logo, output=fpath_full)
-        confirm_bubble("La vidéo {} a été convertie et est prête pour envoi"
+        confirm_bubble("La video {} a ete convertie et est prete pour envoi"
                        .format(title))
 
         if encode_audio:
@@ -340,8 +343,8 @@ def convert_file(fpath):
             fname_afull = "COMPLET-{}.aac".format(title)
             fpath_afull = os.path.join(dest_folder, fname_afull)
             ffmpeg_audio_encode(input=fpath_full, output=fpath_afull)
-            confirm_bubble("La version audio de la vidéo {} "
-                           "a été convertie et est prête pour envoi"
+            confirm_bubble("La version audio de la video {} "
+                           "a ete convertie et est prete pour envoi"
                            .format(title))
 
     # convert clips
@@ -353,7 +356,7 @@ def convert_file(fpath):
         fpath_clip = os.path.join(dest_folder, fname_clip)
         ffmpeg_encode(input=fpath, logo=logo, output=fpath_clip,
                       start_after=start_sec, stop_after=end_sec)
-        confirm_bubble("Le clip#{}: {} a été converti et est prêt pour envoi"
+        confirm_bubble("Le clip#{}: {} a ete converti et est pret pour envoi"
                        .format(clip_id, name))
         logger.info("Conversion of clip #{} ({}) has completed."
                     .format(clip_id, name))
@@ -364,11 +367,15 @@ def convert_file(fpath):
             fpath_aclip = os.path.join(dest_folder, fname_aclip)
             ffmpeg_audio_encode(input=fpath_clip, output=fpath_aclip)
             confirm_bubble("La version audio du clip#{}: {} "
-                           "a été convertie et est prête pour envoi"
+                           "a ete convertie et est prete pour envoi"
                            .format(clip_id, name))
 
-    logger.info("All done. Opening output folder…")
-    syscall(["open", dest_folder])
+    logger.info("All done. Opening output folder...")
+    if SYSTEM == "Windows":
+        syscall(["explorer.exe", '/e,/select,"{}"'.format(dest_folder)],
+                shell=True)
+    else:
+        syscall(["open", dest_folder])
 
 
 if __name__ == '__main__':
