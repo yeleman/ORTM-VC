@@ -5,7 +5,7 @@
 ; Start
 
   !define MUI_PRODUCT "ORTM-VC"
-  !define MUI_FILE "ortm-vc"
+  !define MUI_FILE "convert-video-tk"
   !define MUI_VERSION "1.0"
   !define MUI_BRANDINGTEXT "${MUI_PRODUCT} ${MUI_VERSION}"
   ;CRCCheck On
@@ -45,18 +45,15 @@ Section "install"
 ;Add files
   SetOutPath "$INSTDIR"
 
-  ;File "${MUI_FILE}.exe"
-  ;File "README.txt"
-
   ; List of files/folders to copy
-  File /r dist\*.*
+  File dist\*.*
   File *.dll
   File *.manifest
   File ffmpeg.exe
   File flash-video-encoder.ico
   File logo_ortm.png
   File logo_tm2.png
-  File /r toast
+  File toast\*.*
 
 ;create desktop shortcut
   CreateShortCut "$DESKTOP\${MUI_PRODUCT}.lnk" "$INSTDIR\${MUI_FILE}.exe" parameters "$INSTDIR\${MUI_ICON}"
@@ -85,21 +82,6 @@ RMDir /r "$INSTDIR\*.*"
 ;Remove the installation directory
 RMDir "$INSTDIR"
 
-;# now delete installed file
-;delete $INSTDIR\*.exe
-;delete $INSTDIR\*.dll
-;delete $INSTDIR\*.manifest
-;delete $INSTDIR\*.lib
-;delete $INSTDIR\*.zip
-;delete $INSTDIR\*.png
-;delete $INSTDIR\*.ico
-;delete $INSTDIR\*.pyd
-;
-;RMDir /r $INSTDIR\build
-;RMDir /r $INSTDIR\toast
-;RMDir /r $INSTDIR\dist
-;RMDir /r $INSTDIR\tcl
-
 ;Delete Start Menu Shortcuts
   Delete "$DESKTOP\${MUI_PRODUCT}.lnk"
   Delete "$SMPROGRAMS\${MUI_PRODUCT}\*.*"
@@ -114,7 +96,7 @@ SectionEnd
 ;--------------------------------
 Function .onInstSuccess
    SetOutPath $INSTDIR
-   ExecShell "" '"$INSTDIR\convert-video-tk.exe"'
+   ExecShell "" '"$INSTDIR\${MUI_FILE}"'
 FunctionEnd
 
 Function un.onUninstSuccess
