@@ -46,7 +46,7 @@ Section "install"
   SetOutPath "$INSTDIR"
 
   ; List of files/folders to copy
-  File dist\*.*
+  File /r dist\*.*
   File *.dll
   File *.manifest
   File ffmpeg.exe
@@ -60,7 +60,7 @@ Section "install"
 
 ;create start-menu items
   CreateDirectory "$SMPROGRAMS\${MUI_PRODUCT}"
-  CreateShortCut "$SMPROGRAMS\${MUI_PRODUCT}\Uninstall.lnk" "$INSTDIR\Uninstall.exe" "" "$INSTDIR\${MUI_ICON}" 0
+  CreateShortCut "$SMPROGRAMS\${MUI_PRODUCT}\Uninstall.lnk" "$INSTDIR\Uninstall.exe" "" "" 0
   CreateShortCut "$SMPROGRAMS\${MUI_PRODUCT}\${MUI_PRODUCT}.lnk" "$INSTDIR\${MUI_FILE}.exe" "" "$INSTDIR\${MUI_ICON}" 0
 
 ;write uninstall information to the registry
@@ -83,13 +83,13 @@ RMDir /r "$INSTDIR\*.*"
 RMDir "$INSTDIR"
 
 ;Delete Start Menu Shortcuts
-  Delete "$DESKTOP\${MUI_PRODUCT}.lnk"
-  Delete "$SMPROGRAMS\${MUI_PRODUCT}\*.*"
-  RmDir  "$SMPROGRAMS\${MUI_PRODUCT}"
+Delete "$DESKTOP\${MUI_PRODUCT}.lnk"
+RMDir /r "$SMPROGRAMS\${MUI_PRODUCT}\*.*"
+RmDir  "$SMPROGRAMS\${MUI_PRODUCT}"
 
 ;Delete Uninstaller And Unistall Registry Entries
-  DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\${MUI_PRODUCT}"
-  DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${MUI_PRODUCT}"
+DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\${MUI_PRODUCT}"
+DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${MUI_PRODUCT}"
 
 SectionEnd
 
@@ -100,7 +100,7 @@ Function .onInstSuccess
 FunctionEnd
 
 Function un.onUninstSuccess
-  MessageBox MB_OK "You have successfully uninstalled ${MUI_PRODUCT}."
+  ; MessageBox MB_OK "You have successfully uninstalled ${MUI_PRODUCT}."
 FunctionEnd
 
 ;eof
