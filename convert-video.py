@@ -372,7 +372,7 @@ def convert_file(fpath):
 
     logger.info("All done. Opening output folder...")
     if SYSTEM == "Windows":
-        syscall(["explorer.exe", '/e,/select,"{}"'.format(dest_folder)],
+        syscall(["explorer.exe", '/e,"{}"'.format(dest_folder)],
                 shell=True)
     else:
         syscall(["open", dest_folder])
