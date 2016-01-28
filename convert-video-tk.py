@@ -14,14 +14,18 @@ import Tkinter as tk
 import chardet
 import easygui
 
+ON_POSIX = 'posix' in sys.builtin_module_names
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('ORTM-VC')
 
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-ON_POSIX = 'posix' in sys.builtin_module_names
+# silence py2exe log
+if not ON_POSIX:
+    sys.stderr = sys.stdout
 
 script_thread = None
 script_process = None
+is_frozen = lambda: hasattr(sys, 'frozen')
 
 
 def normalized(output):
@@ -48,8 +52,10 @@ def log_to_terminal(message, terminal, newline=True, auto_scroll=True):
 
 def launch_script(fname, terminal):
     global script_process
+    cmd = ['convert-video.exe'] if is_frozen() else ['python',
+                                                     './convert-video.py']
     script_process = subprocess.Popen(
-        ['python', './convert-video.py', fname],
+        cmd + [fname],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         close_fds=ON_POSIX)
@@ -68,8 +74,6 @@ def main(*args):
     root = tk.Tk()
     root.focus_force()
     root.wm_title("ORTM Video Converter")
-    if not ON_POSIX:
-        root.iconbitmap(os.path.join(ROOT_DIR, 'flash-video-encoder.ico'))
 
     # text output for terminal and messages
     terminal = tk.Text(root,

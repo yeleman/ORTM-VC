@@ -17,11 +17,11 @@ import easygui
 import chardet
 
 SYSTEM = platform.system()
+if SYSTEM == "Windows":
+    # silence py2exe log
+    sys.stderr = sys.stdout
 
-if SYSTEM == 'Windows':
-    FFMPEG = "ffmpeg.exe"
-else:
-    FFMPEG = "./ffmpeg"
+FFMPEG = "ffmpeg.exe" if SYSTEM == 'Windows' else "./ffmpeg"
 COCOAP = "./CocoaDialog.app/Contents/MacOS/CocoaDialog"
 TOASTERP = "toast\\toast.exe"
 # AUDIO_CODEC = []  # defaults to AAC
@@ -75,9 +75,9 @@ def nb_seconds_as_ffmepg(seconds):
 def duration_from_path(fpath):
     duration = None
     ffmpeg_out = syscall([FFMPEG, "-y", "-ss", "00:00:00.0",
-                          "-i", fpath, "-to", "00:00:00.1",
+                          "-i", safe_str(fpath), "-to", "00:00:00.1",
                           "-strict", "-2", "trash.mp4"],
-                         with_output=True)
+                         shell=True, with_output=True)
     for line in ffmpeg_out.split("\n"):
         if "Duration:" in line:
             duration = line.split(',', 1)[0].split(None, 1)[-1]
@@ -370,7 +370,10 @@ def convert_file(fpath):
                            "a ete convertie et est prete pour envoi"
                            .format(clip_id, name))
 
-    logger.info("All done. Opening output folder...")
+    logger.info("Complete\n"
+                "##################################\n"
+                "All done. Opening output folder...\n"
+                "##################################")
     if SYSTEM == "Windows":
         syscall(["explorer.exe", '/e,"{}"'.format(dest_folder)],
                 shell=True)
