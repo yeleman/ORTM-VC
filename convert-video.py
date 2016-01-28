@@ -40,9 +40,19 @@ LOGOS = OrderedDict([
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('ORTM-VC')
 
-
+is_frozen = lambda: hasattr(sys, 'frozen')
 safe_path = lambda x: '"{}"'.format(x)
 safe_str = lambda x: safe_path(x) if SYSTEM == "Windows" else x
+
+
+def get_root():
+    def sf(p):
+        return unicode(p, sys.getfilesystemencoding()) \
+            if SYSTEM == "Windows" else p
+    exename = sys.executable if is_frozen() else __file__
+    return os.path.dirname(sf(os.path.abspath(exename)))
+
+ROOT_DIR = get_root()
 
 
 def seconds_from_ffmepg(timestr):
@@ -74,9 +84,11 @@ def nb_seconds_as_ffmepg(seconds):
 
 def duration_from_path(fpath):
     duration = None
+    trash_path = os.path.join(ROOT_DIR if SYSTEM == "Windows" else "/tmp",
+                              "trash.mp4")
     ffmpeg_out = syscall([FFMPEG, "-y", "-ss", "00:00:00.0",
                           "-i", safe_str(fpath), "-to", "00:00:00.1",
-                          "-strict", "-2", "trash.mp4"],
+                          "-strict", "-2", trash_path],
                          shell=True, with_output=True)
     for line in ffmpeg_out.split("\n"):
         if "Duration:" in line:
